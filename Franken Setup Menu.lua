@@ -459,7 +459,7 @@ function setCustomBans()
 
     }
 
-    for component in string.gmatch(customBanInput, "([^;]+)") do
+    for component in string.gmatch(customBanInput, "([^%s;%s]+)") do
         COMPONENTS_TO_BAN_CUSTOM[component] = {}
     end
 

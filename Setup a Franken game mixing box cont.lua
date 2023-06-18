@@ -331,6 +331,7 @@ end
 
 local function addBanCustom()
     for item, key in ipairs(COMPONENTS_TO_BAN_CUSTOM) do
+        printToAll("banning component: " .. key)
         COMPONENTS_TO_BAN_ALWAYS[key] = item
     end
 end
@@ -521,9 +522,16 @@ function gatherDraftItemsCoroutine()
 
     if _config.Include_Franken_Pack then
         log.i('moving franken pack')
-        FrankbenBags.fillSourceBagsFromCustomBag()
+        FrankenBags.fillSourceBagsFromCustomBag()
         coroutine.yield(0)
     end
+
+    -- !! This does not currently work - as tiles are not currently named in the bags. 
+    -- if _config.Include_Custom_Bans then
+    --     log.i('Checking for potential tile bans')
+    --     FrankenBags.banTiles()
+    --     coroutine.yield(0)
+    -- end
 
     log.i('moving codex 3 parts')
     FrankenBags.DoCodex3()
@@ -1197,6 +1205,51 @@ function FrankenBags.getDraftCandidates()
     }
 end
 
+function FrankenBags.banTiles()
+    -- Support for custom bans on blue/red tiles
+    local dstAttrs = FrankenBags._nameToBagAttrs['Removed Parts']
+    assert(dstAttrs, 'unknown bag "Removed Parts"')
+    local dst = dstAttrs.bag
+    assert(dst, 'missing bag "Removed Parts"')
+
+    local blueTileAttrs = FrankenBags._nameToBagAttrs['Blue Planet Tiles']
+    assert(blueTileAttrs, 'unknown bag "Blue Planet Tiles"')
+    local blueTiles = blueTileAttrs.bag
+    assert(blueTiles, 'missing bag "Blue Planet Tiles"')
+
+    local redTileAttrs = FrankenBags._nameToBagAttrs['Red Anomaly Tiles']
+    assert(redTileAttrs, 'unknown bag "Red Anomaly Tiles"')
+    local redTiles = redTileAttrs.bag
+    assert(redTiles, 'missing bag "Red Anomaly Tiles"')
+
+    local function removeTileFromBag(bag, guid)
+        -- move the tile to the removed parts
+        bag.takeObject({
+            position          = bag.getPosition() + vector(0, 5 + i * 0.2, 0),
+            callback_function = function(object) dst.putObject(object) end,
+            smooth            = false,
+            guid              = guid
+        })
+    end
+
+    for _, entry in ipairs(blueTiles.getObjects()) do
+        local name = entry.name
+        if isRemoveThis(name) then
+            removeTileFromBag(blueTiles, entry.guid)
+        end
+    end
+    coroutine.yield(0)
+
+    for _, entry in ipairs(redTiles.getObjects()) do
+        local name = entry.name
+        if isRemoveThis(name) then
+            removeTileFromBag(redTiles, entry.guid)
+        end
+    end
+    coroutine.yield(0)
+end
+
+
 function FrankenBags.fillSourceBagsFromSelf()
     local candidates = FrankenBags.getDraftCandidates()
     coroutine.yield(0)
@@ -1673,7 +1726,7 @@ function FrankenBags.validateSourceBagsQuantities()
     end
 
     if errors then
-        local message = 'FrankbenBags.validateSourceBagsQuantities: ' .. table.concat(errors, ', ')
+        local message = 'FrankenBags.validateSourceBagsQuantities: ' .. table.concat(errors, ', ')
         printToAll(message, 'Red')
         return false
     end
