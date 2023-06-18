@@ -23,15 +23,15 @@
         "posX": 39.58194,
         "posY": 1.0,
         "posZ": 15.9480791,
-        "rotX": 7.849637E-07,
+        "rotX": 2.3657536E-07,
         "rotY": 180.0,
-        "rotZ": -5.791656E-07,
+        "rotZ": -2.24788167E-07,
         "scaleX": 1.0,
         "scaleY": 1.0,
         "scaleZ": 1.0
       },
       "Nickname": "Franken Box",
-      "Description": "        Use this tool to pre-curate most of the Franken setup. \n        Click 'Gather Draft Items' only if the Franken Box is out on the table.\n\n        Extra Blue Tile: Adds 1 Extra blue tile to the draft bags. Players discard 1 blue tile before building their slice.\n\n        Draft Speaker Order: Adds the numbers 1-6 to the draft. Players can only draft 1 of these. If not playing 6 players, make sure to remove the other numbers before Building bags. \n\n        Powered: This adds 1 extra faction tech and ability to each players' draft bags. Players may keep 3 faction techs and 4 faction abilities, instead of 2/3.\n\n        Ban negatives: This removes negative abilities, like Fragile or Mitosis.\n\n        Ban low-value: This removes components with low to near-0 value, like Sardakk Starting Tech or Shield Paling.\n\n        Replace Components: This will look for a bag named 'Replacing Components' to add alternative versions of components to the draft. Make sure there is only 1 such bag, and that each component to replace is named exactly as the original.\n\n        Include custom Franken pack: This is a custom add-on with loose components that did not fit in any DS factions but can be used for Franken Draft.\n\n        **Pillage is auto-removed (you may put it back in from the 'Removed' bag)\n    ",
+      "Description": "Use the right click menu to set up a Franken game:\n1. Gather draft items creates source bags, moving Franken componets from this box and faction components from faction boxes.\n<Manually edit source bags now to ban things.>\n2. Build draft bags creates and seeds one draft bag per player.\n3. Remove draft bags remove the bags and hidden zones.\nUse the right click menu to set up a Franken game:\n1. Gather draft items creates source bags, moving Franken componets from this box and faction components from faction boxes.\n<Manually edit source bags now to ban things.>\n2. Build draft bags creates and seeds one draft bag per player.\n3. Remove draft bags remove the bags and hidden zones.\n",
       "GMNotes": "",
       "AltLookAngle": {
         "x": 0.0,
