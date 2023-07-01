@@ -8,10 +8,14 @@
 local _config = false
 
 local DEFAULT_CONFIG = {
-    Blue_count = 4,
+    Blue_count = 0,
+    Red_count = 0,
+    Faction_tech_count = 0,
+    Faction_ability_count = 0,
     Powered_draft = false,
     Speaker_order_draft = false,
     Spage_tech = false,
+    Include_DS = true,
     Ban_negatives = false,
     Ban_bad = false,
     Replace_components = false,
@@ -175,7 +179,7 @@ local UNDRAFTABLE = {
     ['Jarl Vel & Jarl Jotrun'] = {},
     ['Kantrus, The Lord'] = {},
     ['Khaz-Rin Li-Zho'] = {},
-    ['Lactarious Indigo'] = {},
+    ['Lactarius Indigo'] = {},
     ['Liberator'] = {},
     ['Myko-Mentori Commodity Token'] = {},
     ['Omen Dice'] = {},
@@ -200,15 +204,16 @@ local UNDRAFTABLE = {
     ['Binding Debts'] = {},
     ['Ancient Blueprints'] = {},
     ['Jack Hallard'] = {},
-    ['Biotic Weapons'] = {},
-    ['Silas Deriga'] = {},
-    ['Auriga'] = {},
     ['Ghoti Wayfarers Tile'] = {},
+    ['Midir'] = {},
+    ['Radiance'] = {},
+    ['Decree'] = {}
 }
 
 -- Remove this if/when a faction table supports multiple heroes.
 local HACK_OVERRIDE_LEADER_DST = {
     ['Korela, The Lady'] = 'Heroes',
+    ['Kantrus, The Lord'] = 'Heroes',
     ['Dannel of the Tenth'] = 'Heroes',
     ['Dannel of the Tenth Ω'] = 'Heroes',
     ['Xxekir Grom'] = 'Heroes',
@@ -245,6 +250,7 @@ local COMPONENTS_TO_BAN_NEGATIVE = {
 }
 
 local COMPONENTS_TO_BAN_BAD = {
+    ['Biophobic'] = {},
     ['Mordred'] = {},
     ['Iconoclast'] = {},
     ['Shield Paling'] = {},
@@ -259,12 +265,28 @@ local COMPONENTS_TO_BAN_BAD = {
 
 local COMPONENTS_TO_BAN_CUSTOM = {}
 
+local CUSTOM_ADDS = {}
+
+local SET_DESCRIPTIONS = {
+    ['Rune Bearer'] = [[Pairs with Decree, Radiance and Midir. Take the Edyn Sigil Tokens from the non-draft parts.]]
+}
+
+local OVERRIDE_INCLUDE = {
+    ['Suffi An'] = 'Commanders'
+}
+
 function setCustomBans(customBans)
-    COMPONENTS_TO_BAN_ALWAYS = customBans
+    COMPONENTS_TO_BAN_CUSTOM = customBans
 end
 
 local function isUndraftable(objectName, dstName)
     assert(type(objectName) == 'string')
+    if OVERRIDE_INCLUDE[objectName] then
+        if OVERRIDE_INCLUDE[objectName] == dstName then
+            return false and true
+        end
+    end
+
     return UNDRAFTABLE[objectName] and true
 end
 
@@ -398,6 +420,8 @@ end
 local _extraDraftBag = false
 
 function onLoad(save_state)
+    _config = DEFAULT_CONFIG
+
     self.addContextMenuItem('0. HELP', printHelpMessage)
     self.addContextMenuItem('1. Gather draft items', function() startLuaCoroutine(self, 'gatherDraftItemsCoroutine') end)
     self.addContextMenuItem('2. Build draft bags', function() startLuaCoroutine(self, 'buildDraftBagsCoroutine') end)
@@ -410,7 +434,7 @@ function onLoad(save_state)
         if object.name == 'Franken Setup Options' then
             object = self.takeObject({
                 index = object.index,
-                rotation = { x = 0, y = 0, z = 180}
+                rotation = { x = 0, y = 0, z = 0}
             })
 
             break
@@ -1147,6 +1171,9 @@ function FrankenBags.getDraftCandidates()
     local unitSet = {}
 
     local function processFactionsBox(factionsBox)
+        if _config.Include_DS == false and string.match(factionsBox.getName(), "Discordant Stars Faction Pack") then
+            return
+        end
         for _, entry in ipairs(factionsBox.getObjects()) do
             local name = string.match(entry.name, '^(.*) Box$')
             local faction = name and _factionHelper.fromTokenName(name)
@@ -1173,6 +1200,18 @@ function FrankenBags.getDraftCandidates()
             elseif string.match(name, ' Faction Pack$') then
                 processFactionsBox(object)
             end
+        end
+    end
+    coroutine.yield(0)
+
+    if _config.Include_DS then
+        CUSTOM_ADDS["Glorious Weaponry"] = { type = TYPE.ABILITY } -- Adds a renamed ability for Kjalengard DS components
+    end
+
+    -- add abilities manually
+    for key, entry in next, CUSTOM_ADDS do
+        if entry.type == TYPE.ABILITY then
+            abilitySet[key] = true
         end
     end
     coroutine.yield(0)
@@ -1206,7 +1245,7 @@ function FrankenBags.getDraftCandidates()
 end
 
 function FrankenBags.banTiles()
-    -- Support for custom bans on blue/red tiles
+    -- Support for custom bans on blue/red tiles (does not work yet)
     local dstAttrs = FrankenBags._nameToBagAttrs['Removed Parts']
     assert(dstAttrs, 'unknown bag "Removed Parts"')
     local dst = dstAttrs.bag
@@ -1269,7 +1308,7 @@ function FrankenBags.fillSourceBagsFromSelf()
                 dstName = 'Replaced Parts'
                 -- Also make sure the replacing component shall move
                 moveReplacingComponent(name, dstName)
-            elseif isUndraftable(name) then
+            elseif isUndraftable(name, dstName) then
                 dstName = 'Non Draft Parts'          
             elseif isRemoveThis(name) then
                 dstName = 'Removed Parts'
@@ -1295,6 +1334,13 @@ function FrankenBags.fillSourceBagsFromSelf()
             local isFrankenName = false
             isFrankenName = isFrankenName or string.match(name, '^Starting Units')
             isFrankenName = isFrankenName or string.match(name, '^Starting Tech')
+            if string.match(name, '^Starting Tech') then
+                if _config.Spage_tech and not string.match(name, '^.*Spage*.$') then
+                    isFrankenName = false
+                elseif not _config.Spage_tech and string.match(name, '^.*Spage*.$') then
+                    isFrankenName = false
+                end
+            end
             isFrankenName = isFrankenName or string.match(name, '^Commodity Tiles')
             if isFrankenName then
                 for _, entry in ipairs(object.getObjects()) do
@@ -1407,7 +1453,13 @@ function FrankenBags.fillSourceBagsFromFactionBoxes(factionsBox)
                 if name == 'Factions' then
                     table.insert(factionsBoxes, object)
                 elseif string.match(name, ' Faction Pack$') then
-                    table.insert(factionsBoxes, object)
+                    if string.match(name, '^Discordant Stars') then
+                        if _config.Include_DS then
+                            table.insert(factionsBoxes, object)
+                        end
+                    else
+                        table.insert(factionsBoxes, object)
+                    end
                 end
             end
         end
@@ -1565,6 +1617,10 @@ function FrankenBags._fillSourceBagsFromFactionBox(faction, factionBox)
     for _, bagHandler in ipairs(bagHandlers) do
         for i, object in ipairs(bagHandler.objects or {}) do
             local name = object.getName()
+            if SET_DESCRIPTIONS[name] then
+                object.setDescription(SET_DESCRIPTIONS[name])
+            end
+
             if bagHandler.discard then
                 local success = _deckHelper.discardCard({
                     guid = object.getGUID(),
@@ -1751,14 +1807,22 @@ function FrankenBags.fillDraftBags()
         end
 
         -- adapt count for setting
-        if srcBagName == 'Blue Planet Tiles' and (_config.Blue_count != 0) then
-            count = _config.Blue_count
-        end
-        if srcBagName == 'Faction Abilities' and _config.Powered_draft then
-            count = count + 1
-        end
-        if srcBagName == 'Faction Techs' and _config.Powered_draft then
-            count = count + 1
+        if srcBagName == 'Blue Planet Tiles' then
+            if _config.Blue_count and _config.Blue_count != 0 then
+                count = _config.Blue_count
+            end
+        elseif srcBagName == 'Red Anomaly Tiles' then
+            if _config.Red_count and _config.Red_count != 0 then
+                count = _config.Red_count
+            end
+        elseif srcBagName == 'Faction Abilities'then
+            if _config.Faction_ability_count and _config.Faction_ability_count != 0 then
+                count = _config.Faction_ability_count
+            end
+        elseif srcBagName == 'Faction Techs'then
+            if _config.Faction_tech_count and _config.Faction_tech_count != 0 then
+                count = _config.Faction_tech_count
+            end
         end
         if bagAttrs.pok and not _setupHelper.getPoK() then
             count = false
